@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍅 ポモドーロタイマー</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1>🍅 ポモドーロタイマー</h1>
+      <div class="header-stats">
+        <span class="streak-badge" id="streakDisplay">🔥 0日連続</span>
+        <span class="today-badge" id="todayDisplay">📅 今日: 0回</span>
+        <span class="weekly-badge" id="weeklyDisplay">📊 今週: 0回</span>
+      </div>
+    </header>
+
+    <div class="main-grid">
+
+      <!-- タイマーカード -->
+      <section class="card timer-card">
+        <div class="mode-buttons">
+          <button class="mode-btn active" data-minutes="25" id="pomodoroBtn">ポモドーロ</button>
+          <button class="mode-btn" data-minutes="5" id="shortBreakBtn">短い休憩</button>
+          <button class="mode-btn" data-minutes="15" id="longBreakBtn">長い休憩</button>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">25:00</div>
+
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="startBtn">▶ スタート</button>
+          <button class="btn btn-secondary" id="resetTimerBtn">↺ リセット</button>
+        </div>
+
+        <div class="session-info">
+          <span id="sessionCount">セッション: 0</span>
+        </div>
+      </section>
+
+      <!-- レベル・XP カード -->
+      <section class="card xp-card">
+        <div class="level-info">
+          <div class="level-circle" id="levelCircle">Lv.1</div>
+          <div class="level-details">
+            <div class="level-title" id="levelTitle">見習いフォーカス</div>
+            <div class="xp-bar-container">
+              <div class="xp-bar" id="xpBar" style="width: 0%"></div>
+            </div>
+            <div class="xp-text" id="xpText">0 / 100 XP</div>
+          </div>
+        </div>
+        <div class="total-xp" id="totalXpDisplay">累計 XP: 0</div>
+        <div class="total-pomodoros" id="totalPomodorosDisplay">累計ポモドーロ: 0回</div>
+      </section>
+
+      <!-- バッジカード -->
+      <section class="card badge-card">
+        <h2 class="card-title">🏆 実績バッジ</h2>
+        <div class="badge-grid" id="badgeGrid">
+          <!-- JS で動的生成 -->
+        </div>
+      </section>
+
+      <!-- グラフカード -->
+      <section class="card stats-card">
+        <h2 class="card-title">📈 統計</h2>
+        <div class="chart-tabs">
+          <button class="chart-tab active" id="weekTabBtn">週間</button>
+          <button class="chart-tab" id="monthTabBtn">月間</button>
+        </div>
+        <div class="chart-container">
+          <canvas id="statsChart"></canvas>
+        </div>
+        <div class="stats-summary" id="statsSummary"></div>
+      </section>
+
+    </div><!-- /.main-grid -->
+
+  </div><!-- /.app-container -->
+
+  <!-- 完了通知オーバーレイ -->
+  <div class="overlay" id="completeOverlay">
+    <div class="overlay-content">
+      <div class="overlay-emoji">🎉</div>
+      <h2>ポモドーロ完了！</h2>
+      <div class="xp-gain" id="xpGainText">+50 XP</div>
+      <div class="level-up-msg" id="levelUpMsg"></div>
+      <div class="new-badges-list" id="newBadgesList"></div>
+      <button class="btn btn-primary" id="overlayCloseBtn">続ける</button>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
