@@ -10,7 +10,7 @@ Step 2〜5 は DOM 不要なため、HTML/CSS の準備を待たず先行実装�
 ## Step 1: プロジェクト骨格の作成
 
 **作成ファイル**
-- `requirements.txt`（Flask のみ）
+- `requirements.txt`（`Flask`、`pytest`、`pytest-flask`）
 - `app.py` — `GET /` で `index.html` を返すだけ
 - `templates/index.html` — タイトルと空の `<body>`
 - `static/css/style.css`、`static/js/` ディレクトリ
