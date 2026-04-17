@@ -1,0 +1,16 @@
+{
+  "name": "copilot-web-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Copilot SDK を使った AI チャット Web アプリケーション",
+  "scripts": {
+    "dev": "concurrently --kill-others \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "install:all": "cd server && npm install && cd ../client && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
