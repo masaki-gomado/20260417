@@ -238,13 +238,39 @@ const BREAK_SEC    = 5  * 60;
 const LONG_BREAK   = 15 * 60;
 const SESSIONS_MAX = 4;
 
+// ===== パーティクル設定 =====
+const PARTICLE_BOTTOM_OFFSET    = 10;
+const PARTICLES_PER_FRAME       = 3;
+const PARTICLE_MAX_H_SPEED      = 1.2;
+const PARTICLE_MAX_V_SPEED      = 1.5;
+const PARTICLE_MIN_V_SPEED      = 0.5;
+const PARTICLE_MAX_SIZE_RANGE   = 3;
+const PARTICLE_MIN_SIZE         = 1;
+const PARTICLE_MAX_DECAY_RANGE  = 0.004;
+const PARTICLE_MIN_DECAY        = 0.002;
+const PARTICLE_HUE_BASE         = 180;
+const PARTICLE_HUE_RANGE        = 60;
+const PARTICLE_SATURATION       = 80;
+const PARTICLE_LIGHTNESS        = 65;
+const PARTICLE_OPACITY_MULT     = 0.6;
+
+// ===== 波紋設定 =====
+const RIPPLE_MIN_SIZE       = 60;
+const RIPPLE_SIZE_RANGE     = 100;
+const RIPPLE_HUE_BASE       = 180;
+const RIPPLE_HUE_RANGE      = 60;
+const RIPPLE_MIN_DURATION   = 3;
+const RIPPLE_DURATION_RANGE = 2;
+const RIPPLE_SPAWN_INTERVAL = 1800;
+
 // ===== 状態 =====
-let totalSec   = WORK_SEC;
-let remaining  = WORK_SEC;
-let running    = false;
-let isWork     = true;
-let session    = 1;          // 1-4
-let intervalId = null;
+let totalSec          = WORK_SEC;
+let remaining         = WORK_SEC;
+let running           = false;
+let isWork            = true;
+let session           = 1;   // 1-4
+let completedSessions = 0;   // 完了した作業セッション数
+let intervalId        = null;
 
 // ===== DOM =====
 const timerText  = document.getElementById('timer-text');
@@ -309,7 +335,7 @@ function updateRing() {
 
 function updateSessionDots() {
   dots.forEach((d, i) => {
-    d.classList.toggle('done', i < session - 1);
+    d.classList.toggle('done', i < completedSessions);
   });
   sessionLbl.textContent = `セッション ${session} / ${SESSIONS_MAX}`;
 }
@@ -331,15 +357,21 @@ function tick() {
 function handlePhaseEnd() {
   if (isWork) {
     // 作業終了 → 休憩へ
-    dots[session - 1].classList.add('done');
-    isWork      = false;
-    totalSec    = (session % SESSIONS_MAX === 0) ? LONG_BREAK : BREAK_SEC;
-    remaining   = totalSec;
-    modeBadge.textContent = (session % SESSIONS_MAX === 0) ? '長い休憩' : '休憩中';
+    completedSessions++;
+    const isLongBreak = completedSessions % SESSIONS_MAX === 0;
+    isWork    = false;
+    totalSec  = isLongBreak ? LONG_BREAK : BREAK_SEC;
+    remaining = totalSec;
+    modeBadge.textContent = isLongBreak ? '長い休憩' : '休憩中';
+    if (isLongBreak) {
+      // 長い休憩後はセッションとドットをリセット
+      completedSessions = 0;
+      session = 1;
+    }
     stopParticles();
   } else {
     // 休憩終了 → 次の作業へ
-    session = (session % SESSIONS_MAX) + 1;
+    if (session < SESSIONS_MAX) session++;
     isWork    = true;
     totalSec  = WORK_SEC;
     remaining = WORK_SEC;
@@ -374,15 +406,16 @@ function startTimer() {
 
 function resetTimer() {
   clearInterval(intervalId);
-  running    = false;
-  isWork     = true;
-  session    = 1;
+  running           = false;
+  isWork            = true;
+  session           = 1;
+  completedSessions = 0;
   totalSec   = WORK_SEC;
   remaining  = WORK_SEC;
   modeBadge.textContent = '集中モード';
   btnStart.textContent  = '▶ スタート';
   timerText.textContent = fmt(remaining);
-  timerText.style.color = '#4a90d9';
+  timerText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-start').trim();
   updateRing();
   updateSessionDots();
   stopParticles();
@@ -406,14 +439,14 @@ window.addEventListener('resize', resizeCanvas);
 
 function createParticle() {
   return {
-    x:    Math.random() * particleCV.width,
-    y:    particleCV.height + 10,
-    vx:   (Math.random() - 0.5) * 1.2,
-    vy:   -(Math.random() * 1.5 + 0.5),
-    size: Math.random() * 3 + 1,
-    life: 1.0,
-    decay: Math.random() * 0.004 + 0.002,
-    hue:  Math.random() * 60 + 180,  // 青〜水色系
+    x:     Math.random() * particleCV.width,
+    y:     particleCV.height - PARTICLE_BOTTOM_OFFSET,
+    vx:    (Math.random() - 0.5) * PARTICLE_MAX_H_SPEED,
+    vy:    -(Math.random() * PARTICLE_MAX_V_SPEED + PARTICLE_MIN_V_SPEED),
+    size:  Math.random() * PARTICLE_MAX_SIZE_RANGE + PARTICLE_MIN_SIZE,
+    life:  1.0,
+    decay: Math.random() * PARTICLE_MAX_DECAY_RANGE + PARTICLE_MIN_DECAY,
+    hue:   Math.random() * PARTICLE_HUE_RANGE + PARTICLE_HUE_BASE,
   };
 }
 
@@ -422,7 +455,7 @@ function animateParticles() {
 
   // 新しいパーティクルを追加
   if (particleActive) {
-    for (let i = 0; i < 3; i++) particles.push(createParticle());
+    for (let i = 0; i < PARTICLES_PER_FRAME; i++) particles.push(createParticle());
   }
 
   particles = particles.filter(p => p.life > 0);
@@ -432,7 +465,7 @@ function animateParticles() {
     p.life -= p.decay;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fillStyle = `hsla(${p.hue}, 80%, 65%, ${p.life * 0.6})`;
+    ctx.fillStyle = `hsla(${p.hue}, ${PARTICLE_SATURATION}%, ${PARTICLE_LIGHTNESS}%, ${p.life * PARTICLE_OPACITY_MULT})`;
     ctx.fill();
   });
 
@@ -467,24 +500,25 @@ function spawnRipple() {
   const ripple = document.createElement('div');
   ripple.className = 'ripple';
 
-  const size  = Math.random() * 100 + 60;
-  const x     = Math.random() * window.innerWidth;
-  const y     = Math.random() * window.innerHeight;
-  const hue   = Math.random() * 60 + 180;
+  const size = Math.random() * RIPPLE_SIZE_RANGE + RIPPLE_MIN_SIZE;
+  const x    = Math.random() * window.innerWidth;
+  const y    = Math.random() * window.innerHeight;
+  const hue  = Math.random() * RIPPLE_HUE_RANGE + RIPPLE_HUE_BASE;
+  const dur  = Math.random() * RIPPLE_DURATION_RANGE + RIPPLE_MIN_DURATION;
 
   ripple.style.cssText = `
     width: ${size}px; height: ${size}px;
     left: ${x - size / 2}px; top: ${y - size / 2}px;
     border: 1.5px solid hsla(${hue}, 70%, 60%, .35);
     background: hsla(${hue}, 70%, 60%, .05);
-    animation-duration: ${Math.random() * 2 + 3}s;
+    animation-duration: ${dur}s;
   `;
 
   rippleCont.appendChild(ripple);
   ripple.addEventListener('animationend', () => ripple.remove());
 }
 
-setInterval(spawnRipple, 1800);
+setInterval(spawnRipple, RIPPLE_SPAWN_INTERVAL);
 
 // ===== 初期描画 =====
 updateRing();
